@@ -18,7 +18,7 @@ Last updated: 2026-05-28
 - Phase 12: README and focused docs.
 - Hardening pass: dummy Rails app smoke test, mocked HTTP provider tests, gated PostgreSQL/pgvector integration test, RuboCop configuration, and GitHub Actions CI.
 - App compatibility pass: added and verified `tenant_mode = :single` so simple non-multitenant apps can omit `tenant:`.
-- Publishing pass: initialized git, created the public GitHub repository, and pushed `main` to `aliumairdev/mempalace-rb`.
+- Publishing pass: initialized git, created the public GitHub repository, pushed `main` to `aliumairdev/mempalace-rb`, and created the `v0.1.0` GitHub release with the built gem artifact.
 
 ## Validation
 
