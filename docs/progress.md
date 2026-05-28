@@ -18,6 +18,7 @@ Last updated: 2026-05-28
 - Phase 12: README and focused docs.
 - Hardening pass: dummy Rails app smoke test, mocked HTTP provider tests, gated PostgreSQL/pgvector integration test, RuboCop configuration, and GitHub Actions CI.
 - App compatibility pass: added and verified `tenant_mode = :single` so simple non-multitenant apps can omit `tenant:`.
+- Publishing pass: initialized git, created the public GitHub repository, and pushed `main` to `aliumairdev/mempalace-rb`.
 
 ## Validation
 
@@ -31,6 +32,7 @@ Last updated: 2026-05-28
 - `bundle exec ruby -Ilib -e 'require "mempalace"; puts Mempalace::VERSION; puts Mempalace.configuration.embedding_provider'`: passed.
 - `find . -name '*.rb' -not -path './test/tmp/*' -print0 | xargs -0 -n1 ruby -c`: passed.
 - `bundle exec ruby test/dummy/bin/rails runner 'puts Mempalace::Engine.engine_name; puts Mempalace.configuration.embedding_provider'`: passed.
+- `gem build mempalace-rb.gemspec`: passed, built `mempalace-rb-0.1.0.gem` locally.
 
 ## Notes
 
