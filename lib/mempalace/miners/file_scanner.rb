@@ -55,7 +55,10 @@ module Mempalace
       end
 
       def excluded_directory?(path)
-        @excluded_directories.any? { |dir| path.to_s.split(File::SEPARATOR).include?(dir) }
+        parts = path.expand_path.relative_path_from(@path).each_filename.to_a
+        @excluded_directories.any? { |dir| parts.include?(dir) }
+      rescue ArgumentError
+        false
       end
 
       def eligible?(path)
