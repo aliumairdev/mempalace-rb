@@ -31,6 +31,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "railties", ">= 7.1"
 
   spec.add_development_dependency "minitest", ">= 5.20"
+  spec.add_development_dependency "parallel", "< 2.1"
   spec.add_development_dependency "rake", ">= 13.0"
   spec.add_development_dependency "rubocop", ">= 1.70"
   spec.add_development_dependency "rubocop-minitest", ">= 0.36"
