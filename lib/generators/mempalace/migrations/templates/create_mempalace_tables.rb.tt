@@ -1,0 +1,199 @@
+# frozen_string_literal: true
+
+class CreateMempalaceTables < ActiveRecord::Migration[7.1]
+  def change
+    create_table :mempalace_wings do |t|
+      t.bigint :account_id, null: false
+      t.string :name, null: false
+      t.string :slug, null: false
+      json_column(t, :metadata, null: false, default: {})
+      t.timestamps
+    end
+    add_index :mempalace_wings, [:account_id, :slug], unique: true
+    add_index :mempalace_wings, :account_id
+
+    create_table :mempalace_rooms do |t|
+      t.bigint :account_id, null: false
+      t.references :wing, null: false, foreign_key: { to_table: :mempalace_wings }
+      t.string :name, null: false
+      t.string :slug, null: false
+      json_column(t, :metadata, null: false, default: {})
+      t.timestamps
+    end
+    add_index :mempalace_rooms, [:account_id, :wing_id, :slug], unique: true
+    add_index :mempalace_rooms, [:account_id, :wing_id]
+
+    create_table :mempalace_drawers do |t|
+      t.bigint :account_id, null: false
+      t.references :wing, null: false, foreign_key: { to_table: :mempalace_wings }
+      t.references :room, null: false, foreign_key: { to_table: :mempalace_rooms }
+      t.text :content, null: false
+      t.string :content_sha256, null: false
+      t.string :normalized_content_sha256, null: false
+      t.string :memory_type, null: false, default: "general"
+      t.string :source_type
+      t.string :source_id
+      t.string :source_file
+      t.integer :chunk_index, null: false, default: 0
+      t.integer :line_start
+      t.integer :line_end
+      t.datetime :filed_at, null: false
+      json_column(t, :metadata, null: false, default: {})
+      add_search_vector_column(t)
+      add_embedding_column(t)
+      t.string :embedding_model
+      t.string :embedding_status, null: false, default: "pending"
+      t.text :embedding_error
+      t.datetime :embedded_at
+      t.timestamps
+    end
+    add_index :mempalace_drawers, [:account_id, :content_sha256], unique: true
+    add_index :mempalace_drawers, [:account_id, :normalized_content_sha256]
+    add_index :mempalace_drawers, [:account_id, :wing_id, :room_id]
+    add_index :mempalace_drawers, [:account_id, :source_type, :source_id, :chunk_index], name: "idx_mempalace_drawers_source"
+    add_index :mempalace_drawers, [:account_id, :memory_type]
+    add_index :mempalace_drawers, [:account_id, :source_type]
+    add_json_index(:mempalace_drawers, :metadata)
+    add_search_index(:mempalace_drawers)
+    add_vector_index(:mempalace_drawers)
+
+    create_table :mempalace_closets do |t|
+      t.bigint :account_id, null: false
+      t.references :wing, null: false, foreign_key: { to_table: :mempalace_wings }
+      t.references :room, null: false, foreign_key: { to_table: :mempalace_rooms }
+      t.text :pointer_text, null: false
+      json_column(t, :drawer_ids, null: false, default: [])
+      json_column(t, :entities, null: false, default: [])
+      json_column(t, :topics, null: false, default: [])
+      t.string :source_file
+      json_column(t, :metadata, null: false, default: {})
+      add_embedding_column(t)
+      t.string :embedding_model
+      t.string :embedding_status, null: false, default: "pending"
+      t.timestamps
+    end
+    add_index :mempalace_closets, [:account_id, :wing_id, :room_id]
+    add_json_index(:mempalace_closets, :metadata)
+
+    create_table :mempalace_facts do |t|
+      t.bigint :account_id, null: false
+      t.string :subject, null: false
+      t.string :predicate, null: false
+      t.string :object, null: false
+      t.datetime :valid_from
+      t.datetime :valid_to
+      t.float :confidence, null: false, default: 1.0
+      t.references :source_drawer, foreign_key: { to_table: :mempalace_drawers }
+      json_column(t, :metadata, null: false, default: {})
+      t.timestamps
+    end
+    add_index :mempalace_facts, [:account_id, :subject]
+    add_index :mempalace_facts, [:account_id, :object]
+    add_index :mempalace_facts, [:account_id, :predicate]
+
+    create_table :mempalace_tunnels do |t|
+      t.bigint :account_id, null: false
+      t.references :source_wing, null: false, foreign_key: { to_table: :mempalace_wings }
+      t.references :source_room, null: false, foreign_key: { to_table: :mempalace_rooms }
+      t.references :target_wing, null: false, foreign_key: { to_table: :mempalace_wings }
+      t.references :target_room, null: false, foreign_key: { to_table: :mempalace_rooms }
+      t.string :kind, null: false, default: "explicit"
+      t.string :label
+      t.float :strength, null: false, default: 1.0
+      json_column(t, :metadata, null: false, default: {})
+      t.timestamps
+    end
+    add_index :mempalace_tunnels, [:account_id, :source_wing_id, :source_room_id]
+    add_index :mempalace_tunnels, [:account_id, :target_wing_id, :target_room_id]
+
+    create_table :mempalace_diary_entries do |t|
+      t.bigint :account_id, null: false
+      t.references :wing, foreign_key: { to_table: :mempalace_wings }
+      t.string :agent_name, null: false
+      t.string :topic, null: false, default: "general"
+      t.text :entry, null: false
+      t.datetime :written_at, null: false
+      json_column(t, :metadata, null: false, default: {})
+      t.timestamps
+    end
+    add_index :mempalace_diary_entries, [:account_id, :agent_name, :written_at], name: "idx_mempalace_diary_agent_time"
+  end
+
+  private
+
+  def postgresql?
+    connection.adapter_name.downcase.include?("postgres")
+  end
+
+  def sqlite?
+    connection.adapter_name.downcase.include?("sqlite")
+  end
+
+  def json_column(table, name, **options)
+    if postgresql?
+      table.jsonb name, **options
+    else
+      table.json name, **options
+    end
+  end
+
+  def add_search_vector_column(table)
+    table.column :search_vector, :tsvector if postgresql?
+  end
+
+  def add_embedding_column(table)
+    if postgresql? && vector_extension_available?
+      table.column :embedding, :vector, limit: Mempalace.configuration.vector_dimensions
+    else
+      table.text :embedding
+    end
+  end
+
+  def vector_extension_available?
+    return false unless postgresql?
+
+    enable_extension "vector" unless extension_enabled?("vector")
+    extension_enabled?("vector")
+  rescue StandardError
+    false
+  end
+
+  def add_json_index(table_name, column)
+    add_index table_name, column, using: :gin if postgresql?
+  end
+
+  def add_search_index(table_name)
+    return unless postgresql?
+
+    add_index table_name, :search_vector, using: :gin
+    execute <<~SQL
+      CREATE FUNCTION mempalace_drawers_search_vector_update() RETURNS trigger AS $$
+      BEGIN
+        NEW.search_vector :=
+          setweight(to_tsvector('simple', coalesce(NEW.content, '')), 'A') ||
+          setweight(to_tsvector('simple', coalesce(NEW.memory_type, '')), 'B') ||
+          setweight(to_tsvector('simple', coalesce(NEW.source_file, '')), 'C');
+        RETURN NEW;
+      END
+      $$ LANGUAGE plpgsql;
+
+      CREATE TRIGGER mempalace_drawers_search_vector_before_write
+      BEFORE INSERT OR UPDATE OF content, memory_type, source_file
+      ON mempalace_drawers
+      FOR EACH ROW EXECUTE FUNCTION mempalace_drawers_search_vector_update();
+    SQL
+  end
+
+  def add_vector_index(table_name)
+    return unless postgresql? && vector_extension_available?
+
+    execute <<~SQL
+      CREATE INDEX idx_#{table_name}_embedding_hnsw
+      ON #{table_name}
+      USING hnsw (embedding vector_cosine_ops)
+      WHERE embedding IS NOT NULL AND embedding_status = 'embedded';
+    SQL
+  rescue StandardError
+    say "Skipping pgvector HNSW index for #{table_name}; pgvector is not available", true
+  end
+end

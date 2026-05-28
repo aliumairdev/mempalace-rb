@@ -1,0 +1,11 @@
+/.bundle/
+/coverage/
+/pkg/
+/tmp/
+/test/tmp/
+*.gem
+*.rbc
+.byebug_history
+.ruby-lsp/
+.yardoc/
+doc/
