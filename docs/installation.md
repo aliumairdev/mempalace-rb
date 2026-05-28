@@ -1,6 +1,12 @@
 # Installation
 
-Add the gem:
+Add the gem from GitHub:
+
+```ruby
+gem "mempalace-rb", github: "aliumairdev/mempalace-rb"
+```
+
+After a RubyGems release, the shorter form will work:
 
 ```ruby
 gem "mempalace-rb"

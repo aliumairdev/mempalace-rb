@@ -10,6 +10,14 @@ Summaries lose source detail. Mempalace stores drawers as the original text you 
 
 ## Install
 
+From GitHub:
+
+```ruby
+gem "mempalace-rb", github: "aliumairdev/mempalace-rb"
+```
+
+After a RubyGems release, the shorter form will work:
+
 ```ruby
 gem "mempalace-rb"
 ```
