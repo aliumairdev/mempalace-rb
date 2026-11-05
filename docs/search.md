@@ -34,3 +34,23 @@ Supported filters:
 - `memory_type:`
 - `source_type:`
 - `limit:`
+
+## Language and query mode (PostgreSQL)
+
+By default drawers are indexed with the `simple` text search configuration and a query matches only when every
+word appears, spelled exactly (`websearch_to_tsquery`). Two settings change that:
+
+```ruby
+Mempalace.configure do |config|
+  config.search_language = "english"   # stemming and stop words ("routing" finds "route")
+  config.search_query_mode = :any      # meaningful terms OR-ed, ranked by ts_rank_cd
+end
+```
+
+- `search_language` is the PostgreSQL text search configuration name. The install migration uses it for the
+  `search_vector` trigger, so set it before running the migration. Changing it later means re-creating the trigger
+  and re-indexing: `UPDATE mempalace_drawers SET content = content;` after replacing the trigger function.
+- `search_query_mode`: `:all` (default, unchanged behaviour) or `:any`. With `:any` a query of only stop words
+  matches nothing, and results are ranked by how many terms match; apply your own cutoff if you want to hide
+  weak matches.
+- Both are ignored by the non-PostgreSQL fallback.

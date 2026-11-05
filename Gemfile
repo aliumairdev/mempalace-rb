@@ -5,6 +5,7 @@ source "https://rubygems.org"
 gemspec
 
 gem "faraday", ">= 2.0", require: false
+gem "pg", ">= 1.5", require: false
 gem "pgvector", ">= 0.3", require: false
 gem "rails", ">= 7.1"
 gem "rubocop", ">= 1.70", require: false
