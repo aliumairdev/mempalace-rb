@@ -35,13 +35,24 @@ module Mempalace
         end
       end
 
+      # The tsquery for this search, as SQL. language and mode come from configuration (the language is
+      # validated to a plain name); the query text is always a bound or quoted value.
+      def self.tsquery_sql(language:, mode:, quoted_query:)
+        case mode.to_sym
+        when :any then "replace(plainto_tsquery('#{language}', #{quoted_query})::text, ' & ', ' | ')::tsquery"
+        else "websearch_to_tsquery('#{language}', #{quoted_query})"
+        end
+      end
+
       private
 
       def postgres_search(scope)
-        rank_sql = "ts_rank_cd(search_vector, websearch_to_tsquery('simple', #{ActiveRecord::Base.connection.quote(@query)}))"
+        config = Mempalace.configuration
+        tsquery = self.class.tsquery_sql(language: config.search_language, mode: config.search_query_mode, quoted_query: ActiveRecord::Base.connection.quote(@query))
+        rank_sql = "ts_rank_cd(search_vector, #{tsquery})"
         rows = scope
                .select("mempalace_drawers.*, #{rank_sql} AS mempalace_rank")
-               .where("search_vector @@ websearch_to_tsquery('simple', ?)", @query)
+               .where("search_vector @@ #{tsquery}")
                .order("mempalace_rank DESC, mempalace_drawers.filed_at DESC")
                .limit(@limit)
 

@@ -170,9 +170,9 @@ class CreateMempalaceTables < ActiveRecord::Migration[7.1]
       CREATE FUNCTION mempalace_drawers_search_vector_update() RETURNS trigger AS $$
       BEGIN
         NEW.search_vector :=
-          setweight(to_tsvector('simple', coalesce(NEW.content, '')), 'A') ||
-          setweight(to_tsvector('simple', coalesce(NEW.memory_type, '')), 'B') ||
-          setweight(to_tsvector('simple', coalesce(NEW.source_file, '')), 'C');
+          setweight(to_tsvector('#{Mempalace.configuration.search_language}', coalesce(NEW.content, '')), 'A') ||
+          setweight(to_tsvector('#{Mempalace.configuration.search_language}', coalesce(NEW.memory_type, '')), 'B') ||
+          setweight(to_tsvector('#{Mempalace.configuration.search_language}', coalesce(NEW.source_file, '')), 'C');
         RETURN NEW;
       END
       $$ LANGUAGE plpgsql;

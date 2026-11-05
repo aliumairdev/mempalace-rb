@@ -2,14 +2,17 @@
 
 require "test_helper"
 
+# A named class: ActiveRecord 8 refuses establish_connection on an anonymous one.
+class PgIntegrationBase < ActiveRecord::Base
+  self.abstract_class = true
+end
+
 class PostgresIntegrationTest < Minitest::Test
   def test_postgres_pgvector_environment_if_configured
     url = ENV.fetch("MEMPALACE_POSTGRES_URL", nil)
     skip "set MEMPALACE_POSTGRES_URL to run PostgreSQL/pgvector integration coverage" if url.blank?
 
-    postgres_model = Class.new(ActiveRecord::Base) do
-      self.abstract_class = true
-    end
+    postgres_model = PgIntegrationBase
     postgres_model.establish_connection(url)
 
     version = postgres_model.connection.select_value("SELECT version()")

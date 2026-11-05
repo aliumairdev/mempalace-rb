@@ -36,6 +36,11 @@ module Mempalace
                   :ollama_base_url,
                   :log_content
 
+    attr_reader :search_language, :search_query_mode
+
+    SEARCH_LANGUAGE_PATTERN = /\A[a-z][a-z0-9_]{0,62}\z/
+    SEARCH_QUERY_MODES = %i[all any].freeze
+
     def initialize
       @embedding_provider = :null
       @embedding_model = nil
@@ -62,6 +67,32 @@ module Mempalace
       @openrouter_base_url = "https://openrouter.ai/api/v1"
       @ollama_base_url = "http://localhost:11434"
       @log_content = false
+      @search_language = "simple"
+      @search_query_mode = :all
+    end
+
+    # The PostgreSQL text search configuration used to index drawers and to parse queries ("simple" keeps
+    # exact words; "english" adds stemming and stop-word removal). It is interpolated into SQL and into the
+    # installed trigger, so it must be a plain configuration name. Changing it after install means
+    # re-creating the trigger and re-indexing (see docs/search.md).
+    def search_language=(value)
+      name = value.to_s
+      unless name.match?(SEARCH_LANGUAGE_PATTERN)
+        raise ConfigurationError,
+              "search_language must be a PostgreSQL text search configuration name (lowercase letters, digits, underscores)"
+      end
+
+      @search_language = name
+    end
+
+    # :all (the default) keeps websearch_to_tsquery: every word of the query must appear. :any turns the
+    # query into its meaningful terms OR-ed together and ranks by how many match, which suits natural-language
+    # requests ("write a short direct message" finds "keep every message short and direct").
+    def search_query_mode=(value)
+      mode = value.to_s.to_sym
+      raise ConfigurationError, "search_query_mode must be one of #{SEARCH_QUERY_MODES.join(', ')}" unless SEARCH_QUERY_MODES.include?(mode)
+
+      @search_query_mode = mode
     end
 
     def single_tenant?
